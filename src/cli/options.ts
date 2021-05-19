@@ -150,7 +150,7 @@ const verifyOptions = async () => {
         } as inquirer.Question);
 
         directory = directoryLocation.selected;
-    };
+    }
 
     if (mode === 'restore' && !file) {
         const fileLocation = await inquirer.prompt({
@@ -168,7 +168,7 @@ const verifyOptions = async () => {
             const pwdModule = require(passwordModulePath);
             if (typeof pwdModule.getPwdForUsername !== 'function') {
                 throw Error(`Cannot find getPwdForUsername(username: String) in password module "${passwordModulePath}".`);
-            };
+            }
         } catch (e) {
             throw Error(`Cannot load password module path "${passwordModulePath}".`);
         }
