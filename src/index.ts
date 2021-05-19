@@ -12,15 +12,15 @@ type AdminCreateUserRequest = AWS.CognitoIdentityServiceProvider.Types.AdminCrea
 type AttributeType = AWS.CognitoIdentityServiceProvider.Types.AttributeType;
 
 
-export const backupUsers = async (cognito: CognitoISP, UserPoolId: string, directory: string, delayDurationInMillis: number = 0) => {
+export const backupUsers = async ( {cognito, userPoolId, directory, delayDurationInMillis = 0}:  {cognito: CognitoISP, userPoolId: string, directory: string, delayDurationInMillis: number} ) => {
     let userPoolList: string[] = [];
 
-    if (UserPoolId == 'all') {
+    if (userPoolId == 'all') {
         // TODO: handle data.NextToken when exceeding the MaxResult limit
         const { UserPools } = await cognito.listUserPools({ MaxResults: 60 }).promise();
         userPoolList = userPoolList.concat(UserPools && UserPools.map(el => el.Id as string) as any);
     } else {
-        userPoolList.push(UserPoolId);
+        userPoolList.push(userPoolId);
     }
 
     for (let poolId of userPoolList) {
@@ -49,12 +49,12 @@ export const backupUsers = async (cognito: CognitoISP, UserPoolId: string, direc
                         await delay(delayDurationInMillis);
                     }
                     await paginationCalls();
-                };
+                }
             };
 
             await paginationCalls();
         } catch (error) {
-            throw error; // to be catched by calling function
+            throw error; // to be caught by calling function
         } finally {
             stringify.end();
             stringify.on('end', () => {
@@ -65,17 +65,17 @@ export const backupUsers = async (cognito: CognitoISP, UserPoolId: string, direc
 };
 
 
-export const restoreUsers = async (cognito: CognitoISP, UserPoolId: string, file: string, password?: string, passwordModulePath?: String, delayDurationInMillis: number = 0) => {
-    if (UserPoolId == 'all') throw Error(`'all' is not a acceptable value for UserPoolId`);
+export const restoreUsers = async ({cognito, userPoolId, file, password, passwordModulePath, limitRate = 2000}: {cognito: CognitoISP, userPoolId: string, file: string, password?: string, passwordModulePath?: String, delayDurationInMillis?: number, limitRate?: number}) => {
+    if (userPoolId == 'all') throw Error(`'all' is not a acceptable value for UserPoolId`);
     let pwdModule: any = null;
     if (typeof passwordModulePath === 'string') {
         pwdModule = require(passwordModulePath);
     }
 
-    const { UserPool } = await cognito.describeUserPool({ UserPoolId }).promise();
+    const { UserPool } = await cognito.describeUserPool({ UserPoolId: userPoolId }).promise();
     const UsernameAttributes = UserPool && UserPool.UsernameAttributes || [];
 
-    const limiter = new Bottleneck({ minTime: 2000 });
+    const limiter = new Bottleneck({ minTime: limitRate});
     const readStream = fs.createReadStream(file);
     const parser = JSONStream.parse();
 
@@ -85,7 +85,7 @@ export const restoreUsers = async (cognito: CognitoISP, UserPoolId: string, file
             const attributes = user.Attributes.filter((attr: AttributeType) => attr.Name !== 'sub');
 
             const params: AdminCreateUserRequest = {
-                UserPoolId,
+                UserPoolId: userPoolId,
                 Username: user.Username,
                 UserAttributes: attributes
             };
@@ -127,7 +127,7 @@ export const restoreUsers = async (cognito: CognitoISP, UserPoolId: string, file
                 throw e;
               }
             }
-        };
+        }
     });
 
     readStream.pipe(parser);

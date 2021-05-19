@@ -48,6 +48,12 @@ export const argv = yargs
                 alias: ["pwdModule"],
                 describe: dimmed`A module that exports an interface getPwdForUsername(username: String) method, fall back to password parameter if throw`,
                 string: true
+            },
+            limitRate: {
+                alias: ["lr"],
+                describe: dimmed`The minimum time in millisecs between each call`,
+                default: 2000,
+                number: true
             }
         });
     })
